@@ -16,3 +16,51 @@
   </p>
 </body>
 </html>
+<script>
+  // When the user clicks Connect
+  document.querySelector('button').addEventListener('click', function() {
+    const token = document.querySelector('input').value;
+
+    if (!token) {
+      alert('Please enter your API token');
+      return;
+    }
+
+    // Connect to Deriv WebSocket
+    const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+
+    ws.onopen = () => {
+      console.log('Connected to Deriv WebSocket');
+
+      // Request balance
+      const msg = {
+        authorize: token
+      };
+      ws.send(JSON.stringify(msg));
+    };
+
+    ws.onmessage = (message) => {
+      const data = JSON.parse(message.data);
+
+      // If authorized, request balance
+      if (data.authorize) {
+        ws.send(JSON.stringify({ balance: 1, currency: 'USD' }));
+      }
+
+      // Display balance
+      if (data.balance) {
+        alert('Your balance: ' + data.balance.balance + ' ' + data.balance.currency);
+      }
+
+      // Handle errors
+      if (data.error) {
+        alert('Error: ' + data.error.message);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error('WebSocket error', err);
+      alert('Connection error');
+    };
+  });
+</script>
