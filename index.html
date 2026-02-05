@@ -7,61 +7,58 @@
   <h1>Deriv Trading Platform</h1>
   <p>Third-party trading tools</p>
 
+  <!-- API token input and connect button -->
   <h3>Connect Deriv API</h3>
   <input type="text" placeholder="Enter Deriv API Token" />
   <button>Connect</button>
+
+  <!-- Balance display -->
   <p id="balance"></p>
 
+  <!-- Disclaimer -->
   <p style="font-size:12px;">
     This platform is not affiliated with Deriv. Trading involves risk.
   </p>
+
+  <!-- Your script goes here -->
+  <script>
+    document.querySelector('button').addEventListener('click', function() {
+      const token = document.querySelector('input').value.trim();
+
+      if (!token) {
+        alert('Please enter your API token');
+        return;
+      }
+
+      const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+
+      ws.onopen = () => {
+        console.log('Connected to Deriv WebSocket');
+        ws.send(JSON.stringify({ authorize: token }));
+      };
+
+      ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+
+        if (data.authorize) {
+          ws.send(JSON.stringify({ balance: 1 }));
+        }
+
+        if (data.balance) {
+          document.getElementById('balance').innerText =
+            'Balance: ' + data.balance.balance + ' ' + data.balance.currency;
+        }
+
+        if (data.error) {
+          alert('Error: ' + data.error.message);
+        }
+      };
+
+      ws.onerror = (err) => {
+        alert('Connection error');
+        console.error(err);
+      };
+    });
+  </script>
 </body>
 </html>
-<script>
-  // When the user clicks Connect
-  document.querySelector('button').addEventListener('click', function() {
-    const token = document.querySelector('input').value;
-
-    if (!token) {
-      alert('Please enter your API token');
-      return;
-    }
-
-    // Connect to Deriv WebSocket
-    const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
-
-    ws.onopen = () => {
-      console.log('Connected to Deriv WebSocket');
-
-      // Request balance
-      const msg = {
-        authorize: token
-      };
-      ws.send(JSON.stringify(msg));
-    };
-
-    ws.onmessage = (message) => {
-      const data = JSON.parse(message.data);
-
-      // If authorized, request balance
-      if (data.authorize) {
-        ws.send(JSON.stringify({ balance: 1, currency: 'USD' }));
-      }
-
-      // Display balance
-      if (data.balance) {
-        alert('Your balance: ' + data.balance.balance + ' ' + data.balance.currency);
-      }
-
-      // Handle errors
-      if (data.error) {
-        alert('Error: ' + data.error.message);
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error('WebSocket error', err);
-      alert('Connection error');
-    };
-  });
-</script>
